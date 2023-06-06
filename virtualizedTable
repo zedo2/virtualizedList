@@ -1,0 +1,87 @@
+import React, { useEffect, useRef, useState } from 'react'
+
+import { Link } from 'react-router-dom'
+
+import * as URL_SETTERS from '../../components/Router/urlSetters'
+import { TSpacesList } from '../../store/interfaces/spaces'
+import { SPACES_LIST } from '../../store/mocks/spaces'
+
+interface ITableView {
+    spacesArr: TSpacesList
+    queryParams?: string
+    total: number
+}
+
+const rowHeight = 36
+const visibleRow = 8
+
+let spaces:any[] = SPACES_LIST.slice(0, visibleRow*2)
+
+const VirtualizedTable = ({ total }: ITableView) => {
+    const [start, setStart] = useState<number>(0)
+    const scrollRef = useRef<HTMLDivElement | null>(null)
+
+    const spaceLen = spaces?.length ? spaces?.length : 0
+
+    const fetchSpaces = (start: number) => {
+        spaces = SPACES_LIST.slice(0, start+(visibleRow*2))
+    }
+
+    useEffect(() => {
+        if(start%(visibleRow-1) === 0 && spaces?.length < start+visibleRow+2 && spaces?.length < total) {
+            fetchSpaces(start)
+        }
+    }, [start])
+
+    const getTopHeight = () => {
+        return rowHeight * start
+    }
+    const getBottomHeight = () => {
+        return rowHeight * (spaceLen - (start + visibleRow))
+    }
+
+    const onScroll = (e: React.UIEvent<HTMLDivElement, UIEvent>) => {
+        setStart(Math.floor(e.currentTarget.scrollTop / rowHeight))
+    }
+
+    return (
+        <div className='table'
+            
+        >
+            <div className='table__header' style={{  position: 'sticky', top: '0', left: '0' ,background: 'white', paddingBottom: '10px' }}>
+                <div className='table__row'>
+                    <div className='table__item space-name'>
+                        {'ID (alias)'}
+                    </div>
+                    <div className='table__item space-name'>
+                        {'логин'}
+                    </div>
+                </div>
+            </div>
+
+            <div className='table__body'
+                ref={scrollRef} 
+                onScroll={(e) => onScroll(e)}
+                style={{ position: 'sticky', top: '40', left: '40', maxHeight: rowHeight * visibleRow, overflow: 'auto' }}
+            >
+                <div style={{ height: getTopHeight() }}></div>
+                {spaces && spaces.length ? spaces?.slice(start, start + visibleRow + 1)?.map((space, idx) =>
+                    <div className='table__row' key={`user-table-${space.spaceId}`}  >
+                        <Link
+                            to={URL_SETTERS.SET_PARTICIPANT_PAGE(space.spaceId)}
+                            className='table__item space-name'
+                        >
+                            {space.spaceName}
+                        </Link>
+                        <div className='table__item space-name'>
+                            {start+idx}
+                        </div>
+                    </div>
+                ) : 'Ничего не найдено'}
+                <div style={{ height: getBottomHeight() }} ></div>
+            </div>
+        </div>
+    )
+}
+
+export { VirtualizedTable }
